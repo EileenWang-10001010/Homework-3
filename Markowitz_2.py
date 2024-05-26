@@ -11,11 +11,6 @@ import warnings
 import argparse
 
 from gurobi_optimods.sharpe_ratio import max_sharpe_ratio
-
-import scipy
-from scipy.optimize import Bounds
-from scipy.optimize import LinearConstraint
-from scipy.optimize import minimize
 """
 Project Setup
 """
@@ -60,12 +55,13 @@ class MyPortfolio:
     NOTE: You can modify the initialization function
     """
 
-    def __init__(self, price, exclude, lookback=252, gamma=0):
+    def __init__(self, price, exclude, lookback=80, gamma=0):
         self.price = price
         self.returns = price.pct_change().fillna(0)
         self.exclude = exclude
         self.lookback = lookback
         self.gamma = gamma
+        self.R_n = None
 
     def calculate_weights(self):
         # Get the assets by excluding the specified column
@@ -78,15 +74,12 @@ class MyPortfolio:
         for i in range(self.lookback):
             self.portfolio_weights.loc[self.price.index[i], assets] = [1/len(assets)]*len(assets)
 
-
         """
         TODO: Complete Task 4 Below
         """
         for i in range(self.lookback + 1, len(self.price)):
             R_n = self.returns.copy()[assets].iloc[i - self.lookback : i]
-            self.portfolio_weights.loc[self.price.index[i], assets] = self.mv_opt(
-                R_n, self.gamma
-            )
+            self.portfolio_weights.loc[self.price.index[i], assets] = self.mv_opt(R_n)
         """
         TODO: Complete Task 4 Above
         """
@@ -94,13 +87,15 @@ class MyPortfolio:
         self.portfolio_weights.ffill(inplace=True)
         self.portfolio_weights.fillna(0, inplace=True)
 
-    def mv_opt(self, R_n, gamma):
+    def mv_opt(self, R_n):
         Sigma = R_n.cov().values
         mu = R_n.mean().values
-        # n = len(R_n.columns)
-        portfolio = max_sharpe_ratio(Sigma, mu)
-        return portfolio.x
-
+        if (mu > 0).all():
+            portfolio = max_sharpe_ratio(Sigma, mu)
+            return portfolio.x
+        else:
+            return [0]*11
+    
     def calculate_portfolio_returns(self):
         # Ensure weights are calculated
         if not hasattr(self, "portfolio_weights"):
