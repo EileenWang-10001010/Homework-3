@@ -61,7 +61,6 @@ class MyPortfolio:
         self.exclude = exclude
         self.lookback = lookback
         self.gamma = gamma
-        self.R_n = None
 
     def calculate_weights(self):
         # Get the assets by excluding the specified column
@@ -94,7 +93,7 @@ class MyPortfolio:
             portfolio = max_sharpe_ratio(Sigma, mu)
             return portfolio.x
         else:
-            return [0]*11
+            return [0]*len(mu)
     
     def calculate_portfolio_returns(self):
         # Ensure weights are calculated
